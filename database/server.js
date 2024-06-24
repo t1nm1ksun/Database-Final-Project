@@ -3,7 +3,7 @@ const mysql = require('mysql2');
 const cors = require('cors');
 
 const app = express();
-const port = 3000;
+const port = 3001;
 
 app.use(cors());
 app.use(express.json());
@@ -26,14 +26,26 @@ db.connect(err => {
 
 app.get('/movies', (req, res) => {
     const query = `
-    SELECT m.title as titleKorean, m.eng_title as titleEnglish, m.year as productionYear,
-           m.country as productionCountry, m.m_type as type, g.genre as genre, 
-           m.status as productionStatus, d.name as director, m.company as productionCompany, 
-           m.update_date as updateDate, m.release_date as releaseDate
-    FROM movie m
-    LEFT JOIN genre g ON m.id = g.movie_id
-    LEFT JOIN movie_director md ON m.id = md.movie_id
-    LEFT JOIN director d ON md.director_id = d.id
+    SELECT 
+    m.title AS titleKorean, 
+    m.eng_title AS titleEnglish, 
+    m.year AS productionYear,
+    m.country AS productionCountry, 
+    m.m_type AS type, 
+    g.genre AS genre, 
+    m.status AS productionStatus, 
+    GROUP_CONCAT(d.name SEPARATOR ', ') AS directors,  -- Concatenate director names
+    m.company AS productionCompany
+FROM 
+    movie m
+LEFT JOIN 
+    genre g ON m.id = g.movie_id
+LEFT JOIN 
+    movie_director md ON m.id = md.movie_id
+LEFT JOIN 
+    director d ON md.director_id = d.id
+GROUP BY 
+    m.id, m.title, m.eng_title, m.year, m.country, m.m_type, g.genre, m.status, m.company;
   `;
 
     db.query(query, (err, results) => {
